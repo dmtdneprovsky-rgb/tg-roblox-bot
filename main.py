@@ -1,19 +1,20 @@
-import asyncio
-from aiogram import Bot, Dispatcher, types, F
-from aiogram.filters import Command
+import logging
+from aiogram import Bot, Dispatcher, executor, types
 from db import init_db, add_user, get_user, get_all, update_status
 
 BOT_TOKEN = "8971497036:AAFUUj81LBtBqEGzKadA8AkZM8-HFLxaU0Y"
-ADMIN_ID = 8409703144  # ТВОЙ Telegram ID
+ADMIN_ID = 8409703144
+
+logging.basicConfig(level=logging.INFO)
 
 bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher()
+dp = Dispatcher(bot)
 
 user_temp = {}
 
 
 # ---------------- START ----------------
-@dp.message(Command("start"))
+@dp.message_handler(commands=["start"])
 async def start(message: types.Message):
     user = await get_user(message.from_user.id)
 
@@ -37,7 +38,7 @@ async def start(message: types.Message):
 
 
 # ---------------- ANKETA ----------------
-@dp.message()
+@dp.message_handler()
 async def handle(message: types.Message):
     uid = message.from_user.id
 
@@ -60,14 +61,17 @@ async def handle(message: types.Message):
 
         await bot.send_message(
             ADMIN_ID,
-            f"📥 Новая заявка!\nID: {uid}\nRoblox: {data['roblox']}\nYouTube: {data['youtube']}"
+            f"📥 Новая заявка!\n\n"
+            f"ID: {uid}\n"
+            f"Roblox: {data['roblox']}\n"
+            f"YouTube: {data['youtube']}"
         )
 
         user_temp.pop(uid)
 
 
-# ---------------- ADMIN LIST ----------------
-@dp.message(Command("list"))
+# ---------------- LIST ----------------
+@dp.message_handler(commands=["list"])
 async def list_users(message: types.Message):
     if message.from_user.id != ADMIN_ID:
         return
@@ -77,48 +81,58 @@ async def list_users(message: types.Message):
     text = "📋 Заявки:\n\n"
 
     for u in users:
-        text += f"ID: {u[0]}\nRoblox: {u[1]}\nYT: {u[2]}\nStatus: {u[3]}\n\n"
+        text += (
+            f"ID: {u[0]}\n"
+            f"Roblox: {u[1]}\n"
+            f"YT: {u[2]}\n"
+            f"Status: {u[3]}\n\n"
+        )
 
     await message.answer(text)
 
 
 # ---------------- APPROVE ----------------
-@dp.message(Command("approve"))
+@dp.message_handler(commands=["approve"])
 async def approve(message: types.Message):
     if message.from_user.id != ADMIN_ID:
         return
 
-    uid = int(message.text.split()[1])
+    uid = int(message.get_args())
+
     await update_status(uid, "approved")
+
     await message.answer("✅ Одобрено")
 
 
 # ---------------- REJECT ----------------
-@dp.message(Command("reject"))
+@dp.message_handler(commands=["reject"])
 async def reject(message: types.Message):
     if message.from_user.id != ADMIN_ID:
         return
 
-    uid = int(message.text.split()[1])
+    uid = int(message.get_args())
+
     await update_status(uid, "rejected")
+
     await message.answer("❌ Отклонено")
 
 
 # ---------------- BAN ----------------
-@dp.message(Command("ban"))
+@dp.message_handler(commands=["ban"])
 async def ban(message: types.Message):
     if message.from_user.id != ADMIN_ID:
         return
 
-    uid = int(message.text.split()[1])
+    uid = int(message.get_args())
+
     await update_status(uid, "blocked")
+
     await message.answer("⛔ Заблокирован")
 
 
-# ---------------- RUN ----------------
-async def main():
+# ---------------- START BOT ----------------
+async def on_startup(_):
     await init_db()
-    await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
+    print("Бот запущен!")
 
-if __name__ == "__main__":
-    asyncio.run(main())
+executor.start_polling(dp, skip_updates=True, on_startup=on_startup)
