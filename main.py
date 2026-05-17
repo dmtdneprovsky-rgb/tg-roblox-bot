@@ -3,8 +3,8 @@ from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from db import init_db, add_user, get_user, get_all, update_status
 
-BOT_TOKEN = "ВСТАВЬ_ТОКЕН"
-ADMIN_ID = 123456789  # ТВОЙ Telegram ID
+BOT_TOKEN = "8971497036:AAFUUj81LBtBqEGzKadA8AkZM8-HFLxaU0Y"
+ADMIN_ID = 8409703144  # ТВОЙ Telegram ID
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
